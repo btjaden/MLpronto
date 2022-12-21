@@ -1,0 +1,11 @@
+{
+	"header_row": true,
+	"algorithm": "logistic_regression",
+	"feature_scaling": true,
+	"missing_values": "remove_rows",
+	"percent_training": 80,
+	"output_column": -1,
+	"filename": "dementia.csv",
+	"extension": ".csv",
+	"delimiter": ","
+}
