@@ -5,11 +5,15 @@ classificationAlgorithms = {'logistic_regression':True, 'support_vector_machine'
 regressionAlgorithms = {'linear_regression':True}
 
 classification_metrics = [("Training accuracy", "train_accuracy", "accuracy_score(y_train, y_train_pred)"),
+                          ("Training F1 score", "train_f1", "f1_score(y_train, y_train_pred, average=\"weighted\")"),
+                          ("Training precision", "train_precision", "precision_score(y_train, y_train_pred, average=\"weighted\")"),
+                          ("Training recall", "train_recall", "recall_score(y_train, y_train_pred, average=\"weighted\")"),
+                          ("Training area under ROC", "train_roc_auc", "roc_auc_score(y_train, y_train_pred_proba, average=\"weighted\", multi_class=\"ovr\")"),
                           ("Testing accuracy", "test_accuracy", "accuracy_score(y_test, y_test_pred)"),
-                          ("F1 score", "f1", "f1_score(y_test, y_test_pred, average=\"weighted\")"),
-                          ("Precision score", "precision", "precision_score(y_test, y_test_pred, average=\"weighted\")"),
-                          ("Recall score", "recall", "recall_score(y_test, y_test_pred, average=\"weighted\")"),
-                          ("Area under ROC", "roc_auc", "roc_auc_score(y_test, y_test_pred, average=\"weighted\")")]
+                          ("Testing F1 score", "test_f1", "f1_score(y_test, y_test_pred, average=\"weighted\")"),
+                          ("Testing precision", "test_precision", "precision_score(y_test, y_test_pred, average=\"weighted\")"),
+                          ("Testing recall", "test_recall", "recall_score(y_test, y_test_pred, average=\"weighted\")"),
+                          ("Testing area under ROC", "test_roc_auc", "roc_auc_score(y_test, y_test_pred_proba, average=\"weighted\", multi_class=\"ovr\")")]
 
 regression_metrics = [("Training R-squared score", "train_r2", "r2_score(y_train, y_train_pred)"),
                       ("Testing R-squared score", "test_r2", "r2_score(y_test, y_train_pred)")]
@@ -121,8 +125,7 @@ def feature_scaling(region, params):
 def remove_rows(region, params):
     if (region == 'body'):
         contains_nan = False
-        if ('labels_contain_nan' in params) and (params['labels_contain_nan']): contains_nan = True
-        if ('features_contain_nan' in params) and (params['features_contain_nan']): contains_nan = True
+        if ('is_missing_values' in params) and (params['is_missing_values']): contains_nan = True
         if ('missing_values' in params) and (params['missing_values'] == 'remove_rows') and (contains_nan):
             return '\n'.join(["# REMOVE ROWS THAT CONTAIN MISSING VALUES",
                               "df.dropna(axis=0, inplace=True)"]) + '\n\n'
@@ -231,7 +234,7 @@ def logistic_regression(region, params):
     if (region == 'header'): return "from sklearn.linear_model import LogisticRegression" + '\n'
     elif (region == 'body'):
         return '\n'.join(["# CREATE LOGISTIC REGRESSION MODEL (CLASSIFICATION)",
-                          "model = LogisticRegression()"]) + '\n\n'
+                          "model = LogisticRegression(random_state=0)"]) + '\n\n'
     else: return ''
 
 
@@ -239,7 +242,7 @@ def support_vector_machine(region, params):
     if (region == 'header'): return "from sklearn.svm import SVC" + '\n'
     elif (region == 'body'):
         return '\n'.join(["# CREATE SUPPORT VECTOR MACHINE MODEL (CLASSIFICATION)",
-                          "model = SVC()"]) + '\n\n'
+                          "model = SVC(probability=True, random_state=0)"]) + '\n\n'
     else: return ''
 
 def random_forest(region, params):
@@ -260,10 +263,17 @@ def linear_regression(region, params):
 
 def train_and_predict(region, params):
     if (region == 'body'):
+        train_proba = "y_train_pred_proba = model.predict_proba(X_train)"
+        test_proba = "y_test_pred_proba = model.predict_proba(X_test)"
+        if ('labels_are_binary' in params) and (params['labels_are_binary']):
+            train_proba += "[:,1]"
+            test_proba += "[:,1]"
         return '\n'.join(["# TRAIN MODEL AND MAKE PREDICTIONS",
                           "model.fit(X_train, y_train)",
                           "y_train_pred = model.predict(X_train)",
-                          "y_test_pred = model.predict(X_test)"]) + '\n\n'
+                          train_proba,
+                          "y_test_pred = model.predict(X_test)",
+                          test_proba]) + '\n\n'
     else: return ''
 
 
@@ -295,7 +305,8 @@ def output(region, params):
     result = ''
     if (region == 'body'):
         result = '\n'.join(["# OUTPUT RESULTS",
-                            "sys.stdout.write('After processing, the data contain ' + str(X.shape[0]) + ' points and ' + str(X.shape[1]) + ' features' + '\\n')"]) + '\n'
+                            "sys.stdout.write('After processing, the data contain ' + str(X.shape[0]) + ' points and ' + str(X.shape[1]) + ' features' + '\\n')",
+                            "sys.stdout.write('Of the ' + str(X.shape[0]) + ' points, ' + str(X_train.shape[0]) + ' are used for training and ' + str(X_test.shape[0]) + ' are used for testing' + '\\n')"]) + '\n'
     if (params['algorithm'] in classificationAlgorithms): return result + output_classification(region, params)
     elif (params['algorithm'] in regressionAlgorithms): return result + output_regression(region, params)
     else: return ''
