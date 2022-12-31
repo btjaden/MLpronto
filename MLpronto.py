@@ -1,25 +1,23 @@
 import os, sys, json, subprocess
 from inspect import getmembers, isfunction
 import mapper
+from notebook import outputNotebook
 
 
-#####################                                                                                                                   
-#####   USAGE   #####                                                                                                                   
-#####################                                                                                                                   
+#####################
+#####   USAGE   #####
+#####################
 
 if len(sys.argv) < 3:
-        sys.stderr.write("\nUSAGE: MLpronto.py <datafile> <parameters.json>" + "\n\n")
-        sys.stderr.write("MLpronto requires two command line arguments. MLpronto takes a data file (.csv, .tsv, .txt, .xls, .xlsx, .xls\
-m, .xlsb, .ods) and a JSON file (indicating ML parameter options) and it generates a file with ML code that can be executed to analyze \
-the data file. Output is to a file with the same name as the input data file but with *x_* appended on the front and the file extension\
- replaced with *.py*.\n\n")
-        sys.exit(1)
+	sys.stderr.write("\nUSAGE: MLpronto.py <datafile> <parameters.json>" + "\n\n")
+	sys.stderr.write("MLpronto requires two command line arguments. MLpronto takes a data file (.csv, .tsv, .txt, .xls, .xlsx, .xlsm, .xlsb, .ods) and a JSON file (indicating ML parameter options) and it generates a file with ML code that can be executed to analyze the data file. Output is to a file with the same name as the input data file but with *x_* appended on the front and the file extension replaced with *.py*.\n\n")
+	sys.exit(1)
 
 
 
-#########################                                                                                                               
-#####   FUNCTIONS   #####                                                                                                               
-#########################                                                                                                               
+#########################
+#####   FUNCTIONS   #####
+#########################
 
 def verifyFile(filename):
         if (os.path.isfile(filename)): return filename
@@ -31,21 +29,21 @@ def verifyFile(filename):
 
 
 def generateCode(data_filename, blocks):
-        # Name of code file                                                                                                             
+        # Name of code file
         head, tail = os.path.split(data_filename)
         if (head.strip() != ''): head += os.sep
         code_filename = head + 'x_' + os.path.splitext(tail)[0] + '.py'
 
-        # Create dictionary mapping function name (string) to function object                                                           
+        # Create dictionary mapping function name (string) to function object
         functions_list = getmembers(mapper, isfunction)
         functions = {}
         for f in functions_list: functions[f[0]] = f[1]
 
         with open(code_filename, 'w') as out_file:
-                # Write header, e.g., libraries                                                                                         
+                # Write header, e.g., libraries
                 for b in blocks: out_file.write(functions[b]('header', params))
 
-                # Write body, e.g., code                                                                                                
+                # Write body, e.g., code
                 for b in blocks: out_file.write(functions[b]('body', params))
 
         sys.stdout.write('\n' + 'A file of ML code has been generated:\t' + code_filename + '\n')
@@ -60,7 +58,7 @@ def executeCode(code_filename, data_filename):
         p = subprocess.run(['python', os.path.split(code_filename)[1]], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         os.chdir(currentDir)
 
-        # Check if there was any error when executing the code file                                                                     
+        # Check if there was any error when executing the code file
         if (p.returncode != 0) or (len(p.stderr.decode()) > 0):
                 sys.stderr.write('Error - the code file that was generated could not be executed successfully on the data file.\n')
                 if (len(p.stderr.decode()) > 0):
@@ -68,6 +66,9 @@ def executeCode(code_filename, data_filename):
                         sys.stderr.write(p.stderr.decode() + '\n\n')
         else:
                 sys.stdout.write('\n' + p.stdout.decode() + '\n\n')
+
+        # Generate iPython notebook
+        outputNotebook(code_filename)
 
 
 
