@@ -1,4 +1,4 @@
-[MLpronto](https://cs.wellesley.edu/~btjaden/MLpronto/)
+[MLpronto](https://mlpronto.org)
 ==========
 
 MLpronto is a tool for rapid, robust, and reproducible machine learning.
