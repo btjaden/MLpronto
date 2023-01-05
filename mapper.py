@@ -1,3 +1,6 @@
+######################################
+#####   MLpronto version 1.0.1   #####
+######################################
 
 textFiles = {'.csv':True, '.tsv':True, '.txt':True}
 excelFiles = {'.xls':True, '.xlsx':True, '.xlsm':True, '.xlsb':True, '.ods':True}
@@ -5,18 +8,18 @@ classificationAlgorithms = {'logistic_regression':True, 'support_vector_machine'
 regressionAlgorithms = {'linear_regression':True}
 
 classification_metrics = [("Training accuracy", "train_accuracy", "accuracy_score(y_train, y_train_pred)"),
-                          ("Training F1 score", "train_f1", "f1_score(y_train, y_train_pred, average=\"weighted\")"),
-                          ("Training precision", "train_precision", "precision_score(y_train, y_train_pred, average=\"weighted\")"),
-                          ("Training recall", "train_recall", "recall_score(y_train, y_train_pred, average=\"weighted\")"),
+                          ("Training F1 score", "train_f1", "f1_score(y_train, y_train_pred, average=\"weighted\", zero_division=0)"),
+                          ("Training precision", "train_precision", "precision_score(y_train, y_train_pred, average=\"weighted\", zero_division=0)"),
+                          ("Training recall", "train_recall", "recall_score(y_train, y_train_pred, average=\"weighted\", zero_division=0)"),
                           ("Training area under ROC", "train_roc_auc", "roc_auc_score(y_train, y_train_pred_proba, average=\"weighted\", multi_class=\"ovr\")"),
                           ("Testing accuracy", "test_accuracy", "accuracy_score(y_test, y_test_pred)"),
-                          ("Testing F1 score", "test_f1", "f1_score(y_test, y_test_pred, average=\"weighted\")"),
-                          ("Testing precision", "test_precision", "precision_score(y_test, y_test_pred, average=\"weighted\")"),
-                          ("Testing recall", "test_recall", "recall_score(y_test, y_test_pred, average=\"weighted\")"),
+                          ("Testing F1 score", "test_f1", "f1_score(y_test, y_test_pred, average=\"weighted\", zero_division=0)"),
+                          ("Testing precision", "test_precision", "precision_score(y_test, y_test_pred, average=\"weighted\", zero_division=0)"),
+                          ("Testing recall", "test_recall", "recall_score(y_test, y_test_pred, average=\"weighted\", zero_division=0)"),
                           ("Testing area under ROC", "test_roc_auc", "roc_auc_score(y_test, y_test_pred_proba, average=\"weighted\", multi_class=\"ovr\")")]
 
 regression_metrics = [("Training R-squared score", "train_r2", "r2_score(y_train, y_train_pred)"),
-                      ("Testing R-squared score", "test_r2", "r2_score(y_test, y_train_pred)")]
+                      ("Testing R-squared score", "test_r2", "r2_score(y_test, y_test_pred)")]
 
 
 
@@ -39,6 +42,15 @@ def libraries(region, params):
         return '\n'.join(["import sys",
                           "import numpy as np",
                           "import pandas as pd"]) + '\n'
+    else: return ''
+
+
+def warnings(region, params):
+    if (region == 'header'):
+        if ('warnings' in params) and (params['warnings']):
+            return '\n'.join(["import warnings",
+                              "warnings.filterwarnings(\"ignore\")"]) + '\n'
+        else: return ''
     else: return ''
 
 
@@ -66,14 +78,15 @@ def read_data(region, params):
 
 def read_data_text(region, params):
     if (region == 'body'):
-        filename, delimiter, header_row = '', '', ''
+        filename, delimiter, header_row = '', '', 'None'
         if ('filename_temp' in params): filename = params['filename_temp']
+        if (filename == ''): filename = params['filename']
         if ('delimiter' in params): delimiter = params['delimiter']
         if (delimiter == '\t'): delimiter = '\\t'
         if ('header_row' in params) and (params['header_row']): header_row = 0
         if (filename != ''): filename = "'" + filename + "'"
         if (delimiter != ''): delimiter = ", sep='" + delimiter + "'"
-        if (header_row != ''): header_row = ", header=" + str(header_row)
+        header_row = ", header=" + str(header_row)
         return '\n'.join(["# READ IN DATA. STORE IN PANDAS DATAFRAME.",
                           "df = pd.read_csv(" + filename + delimiter + ", skipinitialspace=True" + header_row + ")"]) + '\n\n'
     else: return ''
@@ -81,13 +94,14 @@ def read_data_text(region, params):
 
 def read_data_excel(region, params):
     if (region == 'body'):
-        filename, engine, header_row = '', '', ''
+        filename, engine, header_row = '', '', 'None'
         if ('filename_temp' in params): filename = params['filename_temp']
+        if (filename == ''): filename = params['filename']
         if ('engine' in params): engine = params['engine']
         if ('header_row' in params) and (params['header_row']): header_row = 0
         if (filename != ''): filename = "'" + filename + "'"
         if (engine != ''): engine = ", engine='" + engine + "'"
-        if (header_row != ''): header_row = ", header=" + str(header_row)
+        header_row = ", header=" + str(header_row)
         return '\n'.join(["# READ IN DATA. STORE IN PANDAS DATAFRAME.",
                           "df = pd.read_excel(" + filename + engine + header_row + ")"]) + '\n\n'
     else: return ''
@@ -217,7 +231,7 @@ def multivariate_imputation(region, params):
                               "from sklearn.impute import IterativeImputer"]) + '\n'
         elif (region == 'body'):
             return '\n'.join(["# MULTIVARIATE IMPUTATION OF MISSING VALUES",
-                              "X = IterativeImputer(random_state=0).fit_transform(X)"]) + '\n\n'
+                              "X = IterativeImputer(max_iter=200, random_state=0).fit_transform(X)"]) + '\n\n'
         else: return ''
     else: return ''
 
@@ -226,7 +240,7 @@ def model(region, params):
     if (params['algorithm'] == 'logistic_regression'): return logistic_regression(region, params)
     elif (params['algorithm'] == 'support_vector_machine'): return support_vector_machine(region, params)
     elif (params['algorithm'] == 'random_forest'): return random_forest(region, params)
-    elif (params['algorithm'] == 'linear_regression'): return linear_regression(region_params)
+    elif (params['algorithm'] == 'linear_regression'): return linear_regression(region, params)
     else: return ''
 
 
@@ -234,7 +248,7 @@ def logistic_regression(region, params):
     if (region == 'header'): return "from sklearn.linear_model import LogisticRegression" + '\n'
     elif (region == 'body'):
         return '\n'.join(["# CREATE LOGISTIC REGRESSION MODEL (CLASSIFICATION)",
-                          "model = LogisticRegression(random_state=0)"]) + '\n\n'
+                          "model = LogisticRegression(max_iter=1200, random_state=0)"]) + '\n\n'
     else: return ''
 
 
@@ -263,17 +277,24 @@ def linear_regression(region, params):
 
 def train_and_predict(region, params):
     if (region == 'body'):
-        train_proba = "y_train_pred_proba = model.predict_proba(X_train)"
-        test_proba = "y_test_pred_proba = model.predict_proba(X_test)"
-        if ('labels_are_binary' in params) and (params['labels_are_binary']):
-            train_proba += "[:,1]"
-            test_proba += "[:,1]"
-        return '\n'.join(["# TRAIN MODEL AND MAKE PREDICTIONS",
-                          "model.fit(X_train, y_train)",
-                          "y_train_pred = model.predict(X_train)",
-                          train_proba,
-                          "y_test_pred = model.predict(X_test)",
-                          test_proba]) + '\n\n'
+        if (params['algorithm'] in classificationAlgorithms):  # Classification
+            train_proba = "y_train_pred_proba = model.predict_proba(X_train)"
+            test_proba = "y_test_pred_proba = model.predict_proba(X_test)"
+            if ('labels_are_binary' in params) and (params['labels_are_binary']):
+                train_proba += "[:,1]"
+                test_proba += "[:,1]"
+            return '\n'.join(["# TRAIN MODEL AND MAKE PREDICTIONS",
+                              "model.fit(X_train, y_train)",
+                              "y_train_pred = model.predict(X_train)",
+                              train_proba,
+                              "y_test_pred = model.predict(X_test)",
+                              test_proba]) + '\n\n'
+        elif (params['algorithm'] in regressionAlgorithms):  # Regression
+            return '\n'.join(["# TRAIN MODEL AND MAKE PREDICTIONS",
+                              "model.fit(X_train, y_train)",
+                              "y_train_pred = model.predict(X_train)",
+                              "y_test_pred = model.predict(X_test)"]) + '\n\n'
+        else: return ''
     else: return ''
 
 
