@@ -1,11 +1,12 @@
 {
-	"header_row": true,
-	"algorithm": "logistic_regression",
 	"feature_scaling": true,
-	"missing_values": "remove_rows",
+	"algorithm": "logistic_regression",
 	"percent_training": 80,
 	"output_column": -1,
+	"missing_values": "remove_rows",
+	"header_row": true,
 	"filename": "example.csv",
 	"extension": ".csv",
-	"delimiter": ","
+	"delimiter": ",",
+	"labels_are_binary": true
 }
