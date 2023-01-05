@@ -1,3 +1,7 @@
+######################################
+#####   MLpronto version 1.0.1   #####
+######################################
+
 import sys, pathlib
 import nbformat as nbf
 
@@ -7,11 +11,11 @@ import nbformat as nbf
 #########################
 
 def outputNotebook(python_filename):
-        gold = '<font color="#FFCC33">'
+        gold = '<font color="goldenrod">'
 
         # Read in Python file
         nb = nbf.v4.new_notebook()
-        nb['cells'] = [nbf.v4.new_markdown_cell('<H1><center>Notebook created by <font color="magenta">MLpronto</font></center></H1><img src="https://cs.wellesley.edu/~btjaden/MLpronto/pics/H3.png" width="50"/>')]
+        nb['cells'] = [nbf.v4.new_markdown_cell('<H1><center><font color="indigo">Notebook created by</font> <font color="goldenrod">MLpronto</font></center></H1><img src="https://cs.wellesley.edu/~btjaden/MLpronto/img/H3.png" width="75"/>')]
         with open(python_filename, 'r') as in_file: lines = in_file.readlines()
         i = 0
         blocks = []
