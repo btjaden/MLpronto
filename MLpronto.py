@@ -74,7 +74,7 @@ def executeCode(code_filename, data_filename):
         sys.stdout.write('Results of executing the code file...' + '\n')
         currentDir = os.getcwd()
         if (os.path.split(data_filename)[0] != ''): os.chdir(os.path.split(data_filename)[0])
-        p = subprocess.run(['/opt/rh/rh-python36/root/usr/bin/python', os.path.split(code_filename)[1]], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        p = subprocess.run(['python', os.path.split(code_filename)[1]], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         os.chdir(currentDir)
 
         # Check if there was any error when executing the code file
