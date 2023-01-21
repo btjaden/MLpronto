@@ -4,8 +4,8 @@
 
 textFiles = {'.csv':True, '.tsv':True, '.txt':True}
 excelFiles = {'.xls':True, '.xlsx':True, '.xlsm':True, '.xlsb':True, '.ods':True}
-classificationAlgorithms = {'logistic_regression':True, 'support_vector_machine':True, 'random_forest':True}
-regressionAlgorithms = {'linear_regression':True}
+classificationAlgorithms = {'logistic_regression':True, 'kNN_classifier':True, 'gradient_boosting_classifier':True, 'random_forest':True, 'gaussian_naive_bayes':True, 'quadratic_discriminant_analysis':True,'support_vector_classifier':True, 'NN_classifier':True}
+regressionAlgorithms = {'linear_regression':True, 'kNN_regressor':True, 'gradient_boosting_regressor':True, 'lasso':True, 'bayesian_ridge':True, 'elastic_net':True, 'stochastic_gradient_descent':True, 'NN_regressor':True}
 
 classification_metrics = [("Training accuracy", "train_accuracy", "accuracy_score(y_train, y_train_pred)"),
                           ("Training F1 score", "train_f1", "f1_score(y_train, y_train_pred, average=\"weighted\", zero_division=0)"),
@@ -238,9 +238,21 @@ def multivariate_imputation(region, params):
 
 def model(region, params):
     if (params['algorithm'] == 'logistic_regression'): return logistic_regression(region, params)
-    elif (params['algorithm'] == 'support_vector_machine'): return support_vector_machine(region, params)
+    elif (params['algorithm'] == 'kNN_classifier'): return kNN_classifier(region, params)
+    elif (params['algorithm'] == 'gradient_boosting_classifier'): return gradient_boosting_classifier(region, params)
     elif (params['algorithm'] == 'random_forest'): return random_forest(region, params)
+    elif (params['algorithm'] == 'gaussian_naive_bayes'): return gaussian_naive_bayes(region, params)
+    elif (params['algorithm'] == 'quadratic_discriminant_analysis'): return quadratic_discriminant_analysis(region, params)
+    elif (params['algorithm'] == 'support_vector_classifier'): return support_vector_classifier(region, params)
+    elif (params['algorithm'] == 'NN_classifier'): return NN_classifier(region, params)
     elif (params['algorithm'] == 'linear_regression'): return linear_regression(region, params)
+    elif (params['algorithm'] == 'kNN_regressor'): return kNN_regressor(region, params)
+    elif (params['algorithm'] == 'gradient_boosting_regressor'): return gradient_boosting_regressor(region, params)
+    elif (params['algorithm'] == 'lasso'): return lasso(region, params)
+    elif (params['algorithm'] == 'bayesian_ridge'): return bayesian_ridge(region, params)
+    elif (params['algorithm'] == 'elastic_net'): return elastic_net(region, params)
+    elif (params['algorithm'] == 'stochastic_gradient_descent'): return stochastic_gradient_descent(region, params)
+    elif (params['algorithm'] == 'NN_regressor'): return NN_regressor(region, params)
     else: return ''
 
 
@@ -252,18 +264,59 @@ def logistic_regression(region, params):
     else: return ''
 
 
-def support_vector_machine(region, params):
-    if (region == 'header'): return "from sklearn.svm import SVC" + '\n'
+def kNN_classifier(region, params):
+    if (region == 'header'): return "from sklearn.neighbors import KNeighborsClassifier" + '\n'
     elif (region == 'body'):
-        return '\n'.join(["# CREATE SUPPORT VECTOR MACHINE MODEL (CLASSIFICATION)",
-                          "model = SVC(probability=True, random_state=0)"]) + '\n\n'
+        return '\n'.join(["# CREATE K NEAREST NEIGHBORS MODEL (CLASSIFICATION)",
+                          "model = KNeighborsClassifier()"]) + '\n\n'
     else: return ''
+
+
+def gradient_boosting_classifier(region, params):
+    if (region == 'header'): return "from sklearn.ensemble import GradientBoostingClassifier" + '\n'
+    elif (region == 'body'):
+        return '\n'.join(["# CREATE GRADIENT BOOSTING MODEL (CLASSIFICATION)",
+                          "model = GradientBoostingClassifier(random_state=0)"]) + '\n\n'
+    else: return ''
+
 
 def random_forest(region, params):
     if (region == 'header'): return "from sklearn.ensemble import RandomForestClassifier" + '\n'
     elif (region == 'body'):
         return '\n'.join(["# CREATE RANDOM FOREST MODEL (CLASSIFICATION)",
                           "model = RandomForestClassifier(random_state=0)"]) + '\n\n'
+    else: return ''
+
+
+def gaussian_naive_bayes(region, params):
+    if (region == 'header'): return "from sklearn.naive_bayes import GaussianNB" + '\n'
+    elif (region == 'body'):
+        return '\n'.join(["# CREATE GAUSSIAN NAIVE BAYES MODEL (CLASSIFICATION)",
+                          "model = GaussianNB()"]) + '\n\n'
+    else: return ''
+
+
+def quadratic_discriminant_analysis(region, params):
+    if (region == 'header'): return "from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis" + '\n'
+    elif (region == 'body'):
+        return '\n'.join(["# CREATE QUADRATIC DISCRIMINANT ANALYSIS MODEL (CLASSIFICATION)",
+                          "model = QuadraticDiscriminantAnalysis()"]) + '\n\n'
+    else: return ''
+
+
+def support_vector_classifier(region, params):
+    if (region == 'header'): return "from sklearn.svm import SVC" + '\n'
+    elif (region == 'body'):
+        return '\n'.join(["# CREATE SUPPORT VECTOR MACHINE MODEL (CLASSIFICATION)",
+                          "model = SVC(probability=True, random_state=0)"]) + '\n\n'
+    else: return ''
+
+
+def NN_classifier(region, params):
+    if (region == 'header'): return "from sklearn.neural_network import MLPClassifier" + '\n'
+    elif (region == 'body'):
+        return '\n'.join(["# CREATE NEURAL NETWORK MODEL (CLASSIFICATION)",
+                          "model = MLPClassifier(hidden_layer_sizes=(100,), max_iter=1000, random_state=0)"]) + '\n\n'
     else: return ''
 
 
@@ -275,9 +328,65 @@ def linear_regression(region, params):
     else: return ''
 
 
+def kNN_regressor(region, params):
+    if (region == 'header'): return "from sklearn.neighbors import KNeighborsRegressor" + '\n'
+    elif (region == 'body'):
+        return '\n'.join(["# CREATE K NEAREST NIGHBORS MODEL (REGRESSION)",
+                          "model = KNeighborsRegressor()"]) + '\n\n'
+    else: return ''
+
+
+def gradient_boosting_regressor(region, params):
+    if (region == 'header'): return "from sklearn.ensemble import GradientBoostingRegressor" + '\n'
+    elif (region == 'body'):
+        return '\n'.join(["# CREATE GRADIENT BOOSTING MODEL (REGRESSION)",
+                          "model = GradientBoostingRegressor(random_state=0)"]) + '\n\n'
+    else: return ''
+
+
+def lasso(region, params):
+    if (region == 'header'): return "from sklearn.linear_model import Lasso" + '\n'
+    elif (region == 'body'):
+        return '\n'.join(["# CREATE LASSO MODEL (REGRESSION)",
+                          "model = Lasso(random_state=0)"]) + '\n\n'
+    else: return ''
+
+
+def bayesian_ridge(region, params):
+    if (region == 'header'): return "from sklearn.linear_model import BayesianRidge" + '\n'
+    elif (region == 'body'):
+        return '\n'.join(["# CREATE BAYESIAN RIDGE MODEL (REGRESSION)",
+                          "model = BayesianRidge()"]) + '\n\n'
+    else: return ''
+
+
+def elastic_net(region, params):
+    if (region == 'header'): return "from sklearn.linear_model import ElasticNet" + '\n'
+    elif (region == 'body'):
+        return '\n'.join(["# CREATE ELASTIC NET MODEL (REGRESSION)",
+                          "model = ElasticNet(random_state=0)"]) + '\n\n'
+    else: return ''
+
+
+def stochastic_gradient_descent(region, params):
+    if (region == 'header'): return "from sklearn.linear_model import SGDRegressor" + '\n'
+    elif (region == 'body'):
+        return '\n'.join(["# CREATE STOCHASTIC GRADIENT DESCENT MODEL (REGRESSION)",
+                          "model = SGDRegressor(random_state=0)"]) + '\n\n'
+    else: return ''
+
+
+def NN_regressor(region, params):
+    if (region == 'header'): return "from sklearn.neural_network import MLPRegressor" + '\n'
+    elif (region == 'body'):
+        return '\n'.join(["# CREATE NEURAL NETWORK MODEL (REGRESSION)",
+                          "model = MLPRegressor(hidden_layer_sizes=(100,), max_iter=1000, random_state=0)"]) + '\n\n'
+    else: return ''
+
+
 def train_and_predict(region, params):
     if (region == 'body'):
-        if (params['algorithm'] in classificationAlgorithms):  # Classification
+        if (params['algorithm_type'] == 'classification'):  # Classification
             train_proba = "y_train_pred_proba = model.predict_proba(X_train)"
             test_proba = "y_test_pred_proba = model.predict_proba(X_test)"
             if ('labels_are_binary' in params) and (params['labels_are_binary']):
@@ -289,7 +398,7 @@ def train_and_predict(region, params):
                               train_proba,
                               "y_test_pred = model.predict(X_test)",
                               test_proba]) + '\n\n'
-        elif (params['algorithm'] in regressionAlgorithms):  # Regression
+        elif (params['algorithm_type'] == 'regression'):  # Regression
             return '\n'.join(["# TRAIN MODEL AND MAKE PREDICTIONS",
                               "model.fit(X_train, y_train)",
                               "y_train_pred = model.predict(X_train)",
@@ -299,8 +408,8 @@ def train_and_predict(region, params):
 
 
 def evaluate(region, params):
-    if (params['algorithm'] in classificationAlgorithms): return evaluate_classification(region, params)
-    elif (params['algorithm'] in regressionAlgorithms): return evaluate_regression(region, params)
+    if (params['algorithm_type'] == 'classification'): return evaluate_classification(region, params)
+    elif (params['algorithm_type'] == 'regression'): return evaluate_regression(region, params)
     else: return ''
 
 
@@ -328,8 +437,8 @@ def output(region, params):
         result = '\n'.join(["# OUTPUT RESULTS",
                             "sys.stdout.write('After processing, the data contain ' + str(X.shape[0]) + ' points and ' + str(X.shape[1]) + ' features' + '\\n')",
                             "sys.stdout.write('Of the ' + str(X.shape[0]) + ' points, ' + str(X_train.shape[0]) + ' are used for training and ' + str(X_test.shape[0]) + ' are used for testing' + '\\n')"]) + '\n'
-    if (params['algorithm'] in classificationAlgorithms): return result + output_classification(region, params)
-    elif (params['algorithm'] in regressionAlgorithms): return result + output_regression(region, params)
+    if (params['algorithm_type'] == 'classification'): return result + output_classification(region, params)
+    elif (params['algorithm_type'] == 'regression'): return result + output_regression(region, params)
     else: return ''
 
 
