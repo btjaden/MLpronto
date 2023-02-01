@@ -1,5 +1,5 @@
 ######################################
-#####   MLpronto version 1.0.1   #####
+#####   MLpronto version 1.0.3   #####
 ######################################
 
 import sys, pathlib
@@ -15,7 +15,7 @@ def outputNotebook(python_filename):
 
         # Read in Python file
         nb = nbf.v4.new_notebook()
-        nb['cells'] = [nbf.v4.new_markdown_cell('<H1><center><font color="indigo">Notebook created by</font> <font color="goldenrod">MLpronto</font></center></H1><img src="https://cs.wellesley.edu/~btjaden/MLpronto/img/H3.png" width="75"/>')]
+        nb['cells'] = [nbf.v4.new_markdown_cell('<H1><center><font color="indigo">Notebook created by</font> <font color="goldenrod">MLpronto</font></center></H1><img src="https://MLpronto.org/img/H3.png" width="75"/>')]
         with open(python_filename, 'r') as in_file: lines = in_file.readlines()
         i = 0
         blocks = []
