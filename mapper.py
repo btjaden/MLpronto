@@ -1,5 +1,5 @@
 ######################################
-#####   MLpronto version 1.0.1   #####
+#####   MLpronto version 1.0.3   #####
 ######################################
 
 textFiles = {'.csv':True, '.tsv':True, '.txt':True}
@@ -18,14 +18,33 @@ classification_metrics = [("Training accuracy", "train_accuracy", "accuracy_scor
                           ("Testing recall", "test_recall", "recall_score(y_test, y_test_pred, average=\"weighted\", zero_division=0)"),
                           ("Testing area under ROC", "test_roc_auc", "roc_auc_score(y_test, y_test_pred_proba, average=\"weighted\", multi_class=\"ovr\")")]
 
-regression_metrics = [("Training R-squared score", "train_r2", "r2_score(y_train, y_train_pred)"),
-                      ("Testing R-squared score", "test_r2", "r2_score(y_test, y_test_pred)")]
+regression_metrics = [("Training R-squared score", "train_r2", "metrics.r2_score(y_train, y_train_pred)"),
+                      ("Training R-squared adjusted", "train_r2_adjusted", "1.0 - ((1.0-train_r2)*(X_train.shape[0]-1.0)) / (X_train.shape[0]-X_train.shape[1]-1.0)"),
+                      ("Training mean squared error", "train_mse", "metrics.mean_squared_error(y_train, y_train_pred)"),
+                      ("Training mean absolute error", "train_mae", "metrics.mean_absolute_error(y_train, y_train_pred)"),
+                      ("Testing R-squared score", "test_r2", "metrics.r2_score(y_test, y_test_pred)"),
+                      ("Testing R-squared adjusted", "test_r2_adjusted", "1.0 - ((1.0-test_r2)*(X_test.shape[0]-1.0)) / (X_test.shape[0]-X_test.shape[1]-1.0)"),
+                      ("Testing R-squared out of sample", "test_r2_oos", "1.0 - np.sum((y_test_pred-y_test)**2) / np.sum((y_test-np.mean(y_train))**2)"),
+                      ("Testing mean squared error", "test_mse", "metrics.mean_squared_error(y_test, y_test_pred)"),
+                      ("Testing mean absolute error", "test_mae", "metrics.mean_absolute_error(y_test, y_test_pred)")]
 
 
+################################
+#####   HELPER FUNCTIONS   #####
+################################
 
-#########################
-#####   FUNCTIONS   #####
-#########################
+
+def get_filename(params):
+    filename = ''
+    if ('filename_temp' in params): filename = params['filename_temp']
+    if (filename == ''): filename = params['filename']
+    if (filename != ''): filename = "'" + filename + "'"
+    return filename
+
+
+################################
+#####   CODING FUNCTIONS   #####
+################################
 
 
 def header(region, params):
@@ -78,13 +97,11 @@ def read_data(region, params):
 
 def read_data_text(region, params):
     if (region == 'body'):
-        filename, delimiter, header_row = '', '', 'None'
-        if ('filename_temp' in params): filename = params['filename_temp']
-        if (filename == ''): filename = params['filename']
+        filename = get_filename(params)
+        delimiter, header_row = '', 'None'
         if ('delimiter' in params): delimiter = params['delimiter']
         if (delimiter == '\t'): delimiter = '\\t'
         if ('header_row' in params) and (params['header_row']): header_row = 0
-        if (filename != ''): filename = "'" + filename + "'"
         if (delimiter != ''): delimiter = ", sep='" + delimiter + "'"
         header_row = ", header=" + str(header_row)
         return '\n'.join(["# READ IN DATA. STORE IN PANDAS DATAFRAME.",
@@ -94,16 +111,109 @@ def read_data_text(region, params):
 
 def read_data_excel(region, params):
     if (region == 'body'):
-        filename, engine, header_row = '', '', 'None'
-        if ('filename_temp' in params): filename = params['filename_temp']
-        if (filename == ''): filename = params['filename']
+        filename = get_filename(params)
+        engine, header_row = '', 'None'
         if ('engine' in params): engine = params['engine']
         if ('header_row' in params) and (params['header_row']): header_row = 0
-        if (filename != ''): filename = "'" + filename + "'"
         if (engine != ''): engine = ", engine='" + engine + "'"
         header_row = ", header=" + str(header_row)
         return '\n'.join(["# READ IN DATA. STORE IN PANDAS DATAFRAME.",
                           "df = pd.read_excel(" + filename + engine + header_row + ")"]) + '\n\n'
+    else: return ''
+
+
+def visualize(region, params):
+    if (region == 'header'):
+        if ('visualize' in params) and (params['visualize'] > 0):
+            code = ["from sklearn.decomposition import PCA",
+                    "import matplotlib.pyplot as plt"]
+            if (params['visualize'] >= 3):  # 3D plotting
+                code += ["from mpl_toolkits import mplot3d"]
+            return '\n'.join(code) + '\n'
+        else: return ''
+    elif (region == 'body'):
+        if ('visualize' in params) and (params['visualize'] > 0):
+            filename = get_filename(params)
+            extension_index = filename.rfind('.')
+            if (extension_index >= 0): filename = filename[:extension_index]
+            filename2d, filename3d = filename + "2d.png'", filename + "3d.png'"
+            if (params['algorithm_type'] == 'classification'):
+                n_components = min(3, params['visualize'])
+                exp_var_components = 2
+                y_coords2d, y_coords3d = "X_pca[:,1]", "X_pca[:,2]"
+                y_label2d, y_label3d = "'Principal Component 2'", "'Principal Component 3'"
+                clr = ", c=y"
+            elif (params['algorithm_type'] == 'regression'):
+                n_components = min(2, params['visualize']-1)
+                exp_var_components = 1
+                y_coords2d, y_coords3d = "y", "y"
+                y_label2d, y_label3d = "y_header", "y_header"
+                clr = ", c='indigo'"
+                if ('header_row' not in params) or (not params['header_row']): 
+                    y_label2d = '"Column " + str(' + y_label2d + ')'
+                    y_label3d = '"Column " + str(' + y_label3d + ')'
+            else: return ''  # Case should not be reached
+            code = ["# PLOT DATA IN 2 DIMENSIONS",
+                    "pca = PCA(n_components=" + str(n_components) + ", random_state=0)",
+                    "X_pca = pca.fit_transform(X)",
+                    "explained_variance = np.sum(pca.explained_variance_ratio_[:" + str(exp_var_components) + "])",
+                    "plt.scatter(X_pca[:,0], " + y_coords2d + clr + ", s=10)",
+                    "plt.title('2D plot\\nExplained variance: ' + str(round(explained_variance*100.0)) + '%')",
+                    "plt.xlabel('Principal Component 1')",
+                    "plt.ylabel(" + y_label2d + ")",
+                    "plt.xticks([])",
+                    "plt.yticks([])",
+                    "plt.savefig(" + filename2d + ", dpi=300, transparent=True)"]
+
+            if (params['visualize'] >= 3):  # 3D plotting
+                code += ["",
+                         "# PLOT DATA IN 3 DIMENSIONS",
+                         "explained_variance = np.sum(pca.explained_variance_ratio_[:" + str(n_components) + "])",
+                         "plt.clf()",
+                         "ax = plt.axes(projection='3d')",
+                         "ax.scatter(X_pca[:,0], X_pca[:,1], " + y_coords3d + clr + ", s=10)",
+                         "ax.set_title('3D plot\\nExplained variance: ' + str(round(explained_variance*100.0)) + '%')",
+                         "ax.set_xlabel('Principal Component 1')",
+                         "ax.set_ylabel('Principal Component 2')",
+                         "ax.set_zlabel(" + y_label3d + ")",
+                         "ax.set_xticks([])",
+                         "ax.set_yticks([])",
+                         "ax.set_zticks([])",
+                         "ax.w_xaxis.set_pane_color((1.0, 1.0, 1.0, 0.25))",
+                         "ax.w_yaxis.set_pane_color((1.0, 1.0, 1.0, 0.25))",
+                         "ax.w_zaxis.set_pane_color((1.0, 1.0, 1.0, 0.25))",
+                         "plt.savefig(" + filename3d + ", dpi=300, transparent=True)"]
+            return '\n'.join(code) + '\n\n'
+        else: return ''
+    else: return ''
+
+
+def feature_relationships(region, params):
+    if ('feature_relationships' not in params) or (not params['feature_relationships']): return ''
+    if (region == 'header'):
+        if (params['algorithm_type'] == 'classification'):
+            return "from sklearn.feature_selection import f_classif, mutual_info_classif" + '\n'
+        elif (params['algorithm_type'] == 'regression'):
+            return "from sklearn.feature_selection import f_regression, mutual_info_regression" + '\n'
+        else: return ''
+    elif (region == 'body'):
+        code = ["# CALCULATE FEATURE RELATIONSHIPS"]
+        if ('header_row' not in params) or (not params['header_row']): 
+            code += ["names = ['Column ' + str(s) for s in list(df.columns)] + ['Label']"]
+        else:
+            code += ["names = list(df.columns) + [y_header]"]
+        code += ["df_correlations = pd.DataFrame(np.hstack((X, y.reshape(-1,1))), columns=names)",
+                 "sys.stdout.write('Correlations\\n' + df_correlations.corr().round(2).to_string() + '\\n\\n')"]
+        if (params['algorithm_type'] == 'classification'):
+            code += ["mutual_information = mutual_info_classif(X, y, random_state=0)",
+                     "f_statistics, p_values = f_classif(X, y)"]
+        elif (params['algorithm_type'] == 'regression'):
+            code += ["mutual_information = mutual_info_regression(X, y, random_state=0)",
+                     "f_statistics, p_values = f_regression(X, y)"]
+        else: return '\n'.join(code) + '\n\n'
+        code += ["df_relationships = pd.DataFrame(np.vstack((mutual_information, f_statistics, p_values)).T, columns=['Mutual Information', 'F-statistic', 'p-value'], index=names[:-1])",
+                 "sys.stdout.write(df_relationships.to_string() + '\\n\\n')"]
+        return '\n'.join(code) + '\n\n'
     else: return ''
 
 
@@ -161,6 +271,7 @@ def labels_to_y(region, params):
     if (region == 'body'):
         output_column = str(params['output_column'])
         return '\n'.join(["# CONVERT LABEL COLUMN (I.E., DEPENDENT VARIABLE) TO ARRAY, Y",
+                          "y_header = df.columns[" + output_column + "]",
                           "y = df.pop(df.columns[" + output_column + "]).to_numpy()"]) + '\n\n'
     else: return ''
 
@@ -426,7 +537,7 @@ def evaluate_regression(region, params):
     if (region == 'header'): return "from sklearn import metrics" + '\n'
     elif (region == 'body'):
         result = ["# EVALUATE MODEL PREDICTIONS"]
-        for m in regression_metrics: result.append(m[1] + " = metrics." + m[2])
+        for m in regression_metrics: result.append(m[1] + " = " + m[2])
         return '\n'.join(result) + '\n\n'
     else: return ''
 
@@ -451,9 +562,41 @@ def output_classification(region, params):
 
 
 def output_regression(region, params):
-    if (region == 'body'):
+    if (region == 'header'): return residuals(region, params)
+    elif (region == 'body'):
         result = []
         for m in regression_metrics: result.append("sys.stdout.write('" + m[0] + ":\\t' + str(" + m[1] + ") + '\\n')")
-        return '\n'.join(result) + '\n\n'
+        return '\n'.join(result) + '\n\n' + residuals(region, params)
+    else: return ''
+
+
+def residuals(region, params):
+    if (region == 'header'):
+        if ('visualize' in params) and (params['visualize'] > 0): return ''
+        else: return "import matplotlib.pyplot as plt" + '\n'
+    elif (region == 'body'):
+        filename = get_filename(params)
+        extension_index = filename.rfind('.')
+        if (extension_index >= 0): filename = filename[:extension_index]
+        filename_resid1, filename_resid2 = filename + "_r1.png'", filename + "_r2.png'"
+        return '\n'.join(["# PLOT RESIDUALS (SCATTER PLOT)",
+                          "plt.clf()",
+                          "plt.scatter(y_train_pred, y_train - y_train_pred, c='indigo', alpha=0.3)",
+                          "plt.scatter(y_test_pred, y_test - y_test_pred, c='goldenrod', alpha=0.3)",
+                          "plt.title('Residuals vs Fits')",
+                          "plt.xlabel('Fitted Value')",
+                          "plt.ylabel('Residual')",
+                          "plt.legend(['Training data', 'Testing data'], framealpha=0.0)",
+                          "plt.savefig(" + filename_resid1 + ", dpi=300, transparent=True)",
+                          "",
+                          "# PLOT RESIDUALS (HISTOGRAM)",
+                          "plt.clf()",
+                          "plt.hist(y_train - y_train_pred, color='indigo', ec='goldenrod')",
+                          "plt.hist(y_test - y_test_pred, color='goldenrod', ec='indigo')",
+                          "plt.title('Histogram')",
+                          "plt.xlabel('Residual')",
+                          "plt.ylabel('Frequency')",
+                          "plt.legend(['Training data', 'Testing data'], framealpha=0.0)",
+                          "plt.savefig(" + filename_resid2 + ", dpi=300, transparent=True)"]) + '\n\n'
     else: return ''
 
