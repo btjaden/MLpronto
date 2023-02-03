@@ -74,7 +74,7 @@ def warnings(region, params):
 
 
 def random_seed(region, params):
-    if (region == 'header'): return "np.random.seed(0)  # Random number seed" + '\n'
+    if (region == 'header'): return "seed=0; np.random.seed(seed)  # Random number seed" + '\n'
     else: return ''
 
 
@@ -154,7 +154,7 @@ def visualize(region, params):
                     y_label3d = '"Column " + str(' + y_label3d + ')'
             else: return ''  # Case should not be reached
             code = ["# PLOT DATA IN 2 DIMENSIONS",
-                    "pca = PCA(n_components=" + str(n_components) + ", random_state=0)",
+                    "pca = PCA(n_components=" + str(n_components) + ", random_state=seed)",
                     "X_pca = pca.fit_transform(X)",
                     "explained_variance = np.sum(pca.explained_variance_ratio_[:" + str(exp_var_components) + "])",
                     "plt.scatter(X_pca[:,0], " + y_coords2d + clr + ", s=10)",
@@ -205,10 +205,10 @@ def feature_relationships(region, params):
         code += ["df_correlations = pd.DataFrame(np.hstack((X, y.reshape(-1,1))), columns=names)",
                  "sys.stdout.write('Correlations\\n' + df_correlations.corr().round(2).to_string() + '\\n\\n')"]
         if (params['algorithm_type'] == 'classification'):
-            code += ["mutual_information = mutual_info_classif(X, y, random_state=0)",
+            code += ["mutual_information = mutual_info_classif(X, y, random_state=seed)",
                      "f_statistics, p_values = f_classif(X, y)"]
         elif (params['algorithm_type'] == 'regression'):
-            code += ["mutual_information = mutual_info_regression(X, y, random_state=0)",
+            code += ["mutual_information = mutual_info_regression(X, y, random_state=seed)",
                      "f_statistics, p_values = f_regression(X, y)"]
         else: return '\n'.join(code) + '\n\n'
         code += ["df_relationships = pd.DataFrame(np.vstack((mutual_information, f_statistics, p_values)).T, columns=['Mutual Information', 'F-statistic', 'p-value'], index=names[:-1])",
@@ -223,7 +223,7 @@ def split_data(region, params):
     elif (region == 'body'):
         percent_training = params['percent_training'] / 100.0
         return '\n'.join(["# SPLIT DATA INTO TRAINING DATA AND TESTING DATA",
-                          "X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=" + str(percent_training) + ", random_state=0)"]) + '\n\n'
+                          "X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=" + str(percent_training) + ", random_state=seed)"]) + '\n\n'
     else: return ''
 
 
@@ -342,7 +342,7 @@ def multivariate_imputation(region, params):
                               "from sklearn.impute import IterativeImputer"]) + '\n'
         elif (region == 'body'):
             return '\n'.join(["# MULTIVARIATE IMPUTATION OF MISSING VALUES",
-                              "X = IterativeImputer(max_iter=200, random_state=0).fit_transform(X)"]) + '\n\n'
+                              "X = IterativeImputer(max_iter=200, random_state=seed).fit_transform(X)"]) + '\n\n'
         else: return ''
     else: return ''
 
@@ -371,7 +371,7 @@ def logistic_regression(region, params):
     if (region == 'header'): return "from sklearn.linear_model import LogisticRegression" + '\n'
     elif (region == 'body'):
         return '\n'.join(["# CREATE LOGISTIC REGRESSION MODEL (CLASSIFICATION)",
-                          "model = LogisticRegression(max_iter=1200, random_state=0)"]) + '\n\n'
+                          "model = LogisticRegression(max_iter=1200, random_state=seed)"]) + '\n\n'
     else: return ''
 
 
@@ -387,7 +387,7 @@ def gradient_boosting_classifier(region, params):
     if (region == 'header'): return "from sklearn.ensemble import GradientBoostingClassifier" + '\n'
     elif (region == 'body'):
         return '\n'.join(["# CREATE GRADIENT BOOSTING MODEL (CLASSIFICATION)",
-                          "model = GradientBoostingClassifier(random_state=0)"]) + '\n\n'
+                          "model = GradientBoostingClassifier(random_state=seed)"]) + '\n\n'
     else: return ''
 
 
@@ -395,7 +395,7 @@ def random_forest(region, params):
     if (region == 'header'): return "from sklearn.ensemble import RandomForestClassifier" + '\n'
     elif (region == 'body'):
         return '\n'.join(["# CREATE RANDOM FOREST MODEL (CLASSIFICATION)",
-                          "model = RandomForestClassifier(random_state=0)"]) + '\n\n'
+                          "model = RandomForestClassifier(random_state=seed)"]) + '\n\n'
     else: return ''
 
 
@@ -419,7 +419,7 @@ def support_vector_classifier(region, params):
     if (region == 'header'): return "from sklearn.svm import SVC" + '\n'
     elif (region == 'body'):
         return '\n'.join(["# CREATE SUPPORT VECTOR MACHINE MODEL (CLASSIFICATION)",
-                          "model = SVC(probability=True, random_state=0)"]) + '\n\n'
+                          "model = SVC(probability=True, random_state=seed)"]) + '\n\n'
     else: return ''
 
 
@@ -427,7 +427,7 @@ def NN_classifier(region, params):
     if (region == 'header'): return "from sklearn.neural_network import MLPClassifier" + '\n'
     elif (region == 'body'):
         return '\n'.join(["# CREATE NEURAL NETWORK MODEL (CLASSIFICATION)",
-                          "model = MLPClassifier(hidden_layer_sizes=(100,), max_iter=1000, random_state=0)"]) + '\n\n'
+                          "model = MLPClassifier(hidden_layer_sizes=(100,), max_iter=1000, random_state=seed)"]) + '\n\n'
     else: return ''
 
 
@@ -451,7 +451,7 @@ def gradient_boosting_regressor(region, params):
     if (region == 'header'): return "from sklearn.ensemble import GradientBoostingRegressor" + '\n'
     elif (region == 'body'):
         return '\n'.join(["# CREATE GRADIENT BOOSTING MODEL (REGRESSION)",
-                          "model = GradientBoostingRegressor(random_state=0)"]) + '\n\n'
+                          "model = GradientBoostingRegressor(random_state=seed)"]) + '\n\n'
     else: return ''
 
 
@@ -459,7 +459,7 @@ def lasso(region, params):
     if (region == 'header'): return "from sklearn.linear_model import Lasso" + '\n'
     elif (region == 'body'):
         return '\n'.join(["# CREATE LASSO MODEL (REGRESSION)",
-                          "model = Lasso(random_state=0)"]) + '\n\n'
+                          "model = Lasso(random_state=seed)"]) + '\n\n'
     else: return ''
 
 
@@ -475,7 +475,7 @@ def elastic_net(region, params):
     if (region == 'header'): return "from sklearn.linear_model import ElasticNet" + '\n'
     elif (region == 'body'):
         return '\n'.join(["# CREATE ELASTIC NET MODEL (REGRESSION)",
-                          "model = ElasticNet(random_state=0)"]) + '\n\n'
+                          "model = ElasticNet(random_state=seed)"]) + '\n\n'
     else: return ''
 
 
@@ -483,7 +483,7 @@ def stochastic_gradient_descent(region, params):
     if (region == 'header'): return "from sklearn.linear_model import SGDRegressor" + '\n'
     elif (region == 'body'):
         return '\n'.join(["# CREATE STOCHASTIC GRADIENT DESCENT MODEL (REGRESSION)",
-                          "model = SGDRegressor(random_state=0)"]) + '\n\n'
+                          "model = SGDRegressor(random_state=seed)"]) + '\n\n'
     else: return ''
 
 
@@ -491,7 +491,7 @@ def NN_regressor(region, params):
     if (region == 'header'): return "from sklearn.neural_network import MLPRegressor" + '\n'
     elif (region == 'body'):
         return '\n'.join(["# CREATE NEURAL NETWORK MODEL (REGRESSION)",
-                          "model = MLPRegressor(hidden_layer_sizes=(100,), max_iter=1000, random_state=0)"]) + '\n\n'
+                          "model = MLPRegressor(hidden_layer_sizes=(100,), max_iter=1000, random_state=seed)"]) + '\n\n'
     else: return ''
 
 
