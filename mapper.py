@@ -140,24 +140,28 @@ def visualize(region, params):
             if (params['algorithm_type'] == 'classification'):
                 n_components = min(3, params['visualize'])
                 exp_var_components = 2
-                y_coords2d, y_coords3d = "X_pca[:,1]", "X_pca[:,2]"
+                y_train_coords2d, y_train_coords3d = "X_train_pca[:,1]", "X_train_pca[:,2]"
+                y_test_coords2d, y_test_coords3d = "X_test_pca[:,1]", "X_test_pca[:,2]"
                 y_label2d, y_label3d = "'Principal Component 2'", "'Principal Component 3'"
-                clr = ", c=y"
+                clr_train, clr_test = ", c=y_train", ", c=y_test"
             elif (params['algorithm_type'] == 'regression'):
                 n_components = min(2, params['visualize']-1)
                 exp_var_components = 1
-                y_coords2d, y_coords3d = "y", "y"
+                y_train_coords2d, y_train_coords3d = "y_train", "y_train"
+                y_test_coords2d, y_test_coords3d = "y_test", "y_test"
                 y_label2d, y_label3d = "y_header", "y_header"
-                clr = ", c='indigo'"
+                clr_train, clr_test = ", c='indigo'", ", c='indigo'"
                 if ('header_row' not in params) or (not params['header_row']): 
                     y_label2d = '"Column " + str(' + y_label2d + ')'
                     y_label3d = '"Column " + str(' + y_label3d + ')'
             else: return ''  # Case should not be reached
             code = ["# PLOT DATA IN 2 DIMENSIONS",
                     "pca = PCA(n_components=" + str(n_components) + ", random_state=seed)",
-                    "X_pca = pca.fit_transform(X)",
+                    "X_train_pca = pca.fit_transform(X_train)",
+                    "X_test_pca = pca.transform(X_test)",
                     "explained_variance = np.sum(pca.explained_variance_ratio_[:" + str(exp_var_components) + "])",
-                    "plt.scatter(X_pca[:,0], " + y_coords2d + clr + ", s=10)",
+                    "plt.scatter(X_train_pca[:,0], " + y_train_coords2d + clr_train + ", s=10)",
+                    "plt.scatter(X_test_pca[:,0], " + y_test_coords2d + clr_test + ", s=10)",
                     "plt.title('2D plot\\nExplained variance: ' + str(round(explained_variance*100.0)) + '%')",
                     "plt.xlabel('Principal Component 1')",
                     "plt.ylabel(" + y_label2d + ")",
@@ -171,7 +175,8 @@ def visualize(region, params):
                          "explained_variance = np.sum(pca.explained_variance_ratio_[:" + str(n_components) + "])",
                          "plt.clf()",
                          "ax = plt.axes(projection='3d')",
-                         "ax.scatter(X_pca[:,0], X_pca[:,1], " + y_coords3d + clr + ", s=10)",
+                         "ax.scatter(X_train_pca[:,0], X_train_pca[:,1], " + y_train_coords3d + clr_train + ", s=10)",
+                         "ax.scatter(X_test_pca[:,0], X_test_pca[:,1], " + y_test_coords3d + clr_test + ", s=10)",
                          "ax.set_title('3D plot\\nExplained variance: ' + str(round(explained_variance*100.0)) + '%')",
                          "ax.set_xlabel('Principal Component 1')",
                          "ax.set_ylabel('Principal Component 2')",
@@ -197,19 +202,20 @@ def feature_relationships(region, params):
             return "from sklearn.feature_selection import f_regression, mutual_info_regression" + '\n'
         else: return ''
     elif (region == 'body'):
-        code = ["# CALCULATE FEATURE RELATIONSHIPS"]
+        code = ["# CALCULATE FEATURE RELATIONSHIPS",
+                "X_train_test, y_train_test = np.vstack((X_train, X_test)), np.concatenate((y_train, y_test))"]
         if ('header_row' not in params) or (not params['header_row']): 
             code += ["names = ['Column ' + str(s) for s in list(df.columns)] + ['Label']"]
         else:
             code += ["names = list(df.columns) + [y_header]"]
-        code += ["df_correlations = pd.DataFrame(np.hstack((X, y.reshape(-1,1))), columns=names)",
+        code += ["df_correlations = pd.DataFrame(np.hstack((X_train_test, y_train_test.reshape(-1,1))), columns=names)",
                  "sys.stdout.write('Correlations\\n' + df_correlations.corr().round(2).to_string() + '\\n\\n')"]
         if (params['algorithm_type'] == 'classification'):
-            code += ["mutual_information = mutual_info_classif(X, y, random_state=seed)",
-                     "f_statistics, p_values = f_classif(X, y)"]
+            code += ["mutual_information = mutual_info_classif(X_train_test, y_train_test, random_state=seed)",
+                     "f_statistics, p_values = f_classif(X_train_test, y_train_test)"]
         elif (params['algorithm_type'] == 'regression'):
-            code += ["mutual_information = mutual_info_regression(X, y, random_state=seed)",
-                     "f_statistics, p_values = f_regression(X, y)"]
+            code += ["mutual_information = mutual_info_regression(X_train_test, y_train_test, random_state=seed)",
+                     "f_statistics, p_values = f_regression(X_train_test, y_train_test)"]
         else: return '\n'.join(code) + '\n\n'
         code += ["df_relationships = pd.DataFrame(np.vstack((mutual_information, f_statistics, p_values)).T, columns=['Mutual Information', 'F-statistic', 'p-value'], index=names[:-1])",
                  "sys.stdout.write(df_relationships.to_string() + '\\n\\n')"]
@@ -330,7 +336,9 @@ def univariate_imputation(region, params):
         if (region == 'header'): return "from sklearn.impute import SimpleImputer" + '\n'
         elif (region == 'body'):
             return '\n'.join(["# UNIVARIATE IMPUTATION OF MISSING VALUES",
-                              "X = SimpleImputer(missing_values=np.nan, strategy='mean').fit_transform(X)"]) + '\n\n'
+                              "imputer = SimpleImputer(missing_values=np.nan, strategy='mean').fit(X_train)",
+                              "X_train = imputer.transform(X_train)",
+                              "X_test = imputer.transform(X_test)"]) + '\n\n'
         else: return ''
     else: return ''
 
@@ -342,7 +350,9 @@ def multivariate_imputation(region, params):
                               "from sklearn.impute import IterativeImputer"]) + '\n'
         elif (region == 'body'):
             return '\n'.join(["# MULTIVARIATE IMPUTATION OF MISSING VALUES",
-                              "X = IterativeImputer(max_iter=200, random_state=seed).fit_transform(X)"]) + '\n\n'
+                              "imputer = IterativeImputer(max_iter=200, random_state=seed).fit(X_train)",
+                              "X_train = imputer.transform(X_train)",
+                              "X_test = imputer.transform(X_test)"]) + '\n\n'
         else: return ''
     else: return ''
 
