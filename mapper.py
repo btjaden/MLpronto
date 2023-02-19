@@ -576,7 +576,29 @@ def output_regression(region, params):
     elif (region == 'body'):
         result = []
         for m in regression_metrics: result.append("sys.stdout.write('" + m[0] + ":\\t' + str(" + m[1] + ") + '\\n')")
-        return '\n'.join(result) + '\n\n' + residuals(region, params)
+        return '\n'.join(result) + '\n\n' + actual_vs_predicted(region, params) + residuals(region, params)
+    else: return ''
+
+
+def actual_vs_predicted(region, params):
+    if (region == 'body'):
+        filename = get_filename(params)
+        extension_index = filename.rfind('.')
+        if (extension_index >= 0): filename = filename[:extension_index]
+        filename_ap = filename + "_ap.png'"
+
+        return '\n'.join(["# PLOT ACTUAL VS PREDICTED",
+                          "plt.clf()",
+                          "plt.scatter(y_train_pred, y_train, label='Training data', c='indigo', alpha=0.3)",
+                          "plt.scatter(y_test_pred, y_test, label='Testing data', c='goldenrod', alpha=0.3)",
+                          "plt.xlabel('Predicted value')",
+                          "plt.ylabel('Actual value')",
+                          "maxie = min(np.max(y_train), np.max(y_train_pred), np.max(y_test), np.max(y_test_pred))",
+                          "plt.plot([0, maxie], [0, maxie], c='k')",
+                          "plt.xlim([0, maxie])",
+                          "plt.ylim([0, maxie])",
+                          "plt.legend(framealpha=0.0)",
+                          "plt.savefig(" + filename_ap + ", dpi=300, transparent=True)"]) + '\n\n'
     else: return ''
 
 
