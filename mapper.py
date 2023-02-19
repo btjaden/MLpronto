@@ -586,7 +586,6 @@ def actual_vs_predicted(region, params):
         extension_index = filename.rfind('.')
         if (extension_index >= 0): filename = filename[:extension_index]
         filename_ap = filename + "_ap.png'"
-
         return '\n'.join(["# PLOT ACTUAL VS PREDICTED",
                           "plt.clf()",
                           "plt.scatter(y_train_pred, y_train, label='Training data', c='indigo', alpha=0.3)",
