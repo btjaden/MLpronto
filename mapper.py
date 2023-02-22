@@ -60,15 +60,15 @@ def libraries(region, params):
     if (region == 'header'):
         return '\n'.join(["import sys",
                           "import numpy as np",
-                          "import pandas as pd"]) + '\n'
+                          "import pandas as pd",
+                          "import matplotlib.pyplot as plt"]) + '\n'
     else: return ''
 
 
 def warnings(region, params):
     if (region == 'header'):
         if ('warnings' in params) and (params['warnings']):
-            return '\n'.join(["import warnings",
-                              "warnings.filterwarnings(\"ignore\")"]) + '\n'
+            return "import warnings; warnings.filterwarnings(\"ignore\")" + '\n'
         else: return ''
     else: return ''
 
@@ -125,8 +125,7 @@ def read_data_excel(region, params):
 def visualize(region, params):
     if (region == 'header'):
         if ('visualize' in params) and (params['visualize'] > 0):
-            code = ["from sklearn.decomposition import PCA",
-                    "import matplotlib.pyplot as plt"]
+            code = ["from sklearn.decomposition import PCA"]
             if (params['visualize'] >= 3):  # 3D plotting
                 code += ["from mpl_toolkits import mplot3d"]
             return '\n'.join(code) + '\n'
@@ -162,9 +161,9 @@ def visualize(region, params):
                     "explained_variance = np.sum(pca.explained_variance_ratio_[:" + str(exp_var_components) + "])",
                     "plt.scatter(X_train_pca[:,0], " + y_train_coords2d + clr_train + ", s=10)",
                     "plt.scatter(X_test_pca[:,0], " + y_test_coords2d + clr_test + ", s=10)",
-                    "plt.title('2D plot\\nExplained variance: ' + str(round(explained_variance*100.0)) + '%')",
-                    "plt.xlabel('Principal Component 1')",
-                    "plt.ylabel(" + y_label2d + ")",
+                    "plt.title('2D plot\\nExplained variance: ' + str(round(explained_variance*100.0)) + '%', fontsize=14)",
+                    "plt.xlabel('Principal Component 1', fontsize=12)",
+                    "plt.ylabel(" + y_label2d + ", fontsize=12)",
                     "plt.xticks([])",
                     "plt.yticks([])",
                     "plt.savefig(" + filename2d + ", dpi=300, transparent=True)"]
@@ -177,10 +176,10 @@ def visualize(region, params):
                          "ax = plt.axes(projection='3d')",
                          "ax.scatter(X_train_pca[:,0], X_train_pca[:,1], " + y_train_coords3d + clr_train + ", s=10)",
                          "ax.scatter(X_test_pca[:,0], X_test_pca[:,1], " + y_test_coords3d + clr_test + ", s=10)",
-                         "ax.set_title('3D plot\\nExplained variance: ' + str(round(explained_variance*100.0)) + '%')",
-                         "ax.set_xlabel('Principal Component 1')",
-                         "ax.set_ylabel('Principal Component 2')",
-                         "ax.set_zlabel(" + y_label3d + ")",
+                         "ax.set_title('3D plot\\nExplained variance: ' + str(round(explained_variance*100.0)) + '%', fontsize=14)",
+                         "ax.set_xlabel('Principal Component 1', fontsize=12)",
+                         "ax.set_ylabel('Principal Component 2', fontsize=12)",
+                         "ax.set_zlabel(" + y_label3d + ", fontsize=12)",
                          "ax.set_xticks([])",
                          "ax.set_yticks([])",
                          "ax.set_zticks([])",
@@ -564,16 +563,53 @@ def output(region, params):
 
 
 def output_classification(region, params):
-    if (region == 'body'):
+    if (region == 'header'): return confusion_and_classification(region, params)
+    elif (region == 'body'):
         result = []
         for m in classification_metrics: result.append("sys.stdout.write('" + m[0] + ":\\t' + str(" + m[1] + ") + '\\n')")
-        return '\n'.join(result) + '\n\n'
+        return '\n'.join(result) + '\n\n' + confusion_and_classification(region, params)
+    else: return ''
+
+
+def confusion_and_classification(region, params):
+    if (region == 'header'): return "import itertools" + '\n'
+    elif (region == 'body'):
+        filename = get_filename(params)
+        extension_index = filename.rfind('.')
+        if (extension_index >= 0): filename = filename[:extension_index]
+        filename_cm, filename_cr = filename + "_cm.png'", filename + "_cr.png'"
+        return '\n'.join(["# CONFUSION MATRIX",
+                          "plt.clf()",
+                          "plt.rcParams.update({'font.size':16})",
+                          "cm = metrics.confusion_matrix(y_test, y_test_pred, labels=model.classes_)",
+                          "disp = metrics.ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=model.classes_)",
+                          "disp.plot()",
+                          "plt.title('Confusion Matrix')",
+                          "plt.tight_layout()",
+                          "plt.savefig(" + filename_cm + ", dpi=300, transparent=True)",
+                          "",
+                          "# CLASSIFICATION REPORT",
+                          "plt.clf()",
+                          "prfs = np.array(metrics.precision_recall_fscore_support(y_test, y_test_pred, average=None, labels=model.classes_, zero_division=0))",
+                          "prf, support = prfs[:-1,:].T, prfs[-1,:].astype(int)",
+                          "xticklabels = ['Precision', 'Recall', 'F1-score']",
+                          "yticklabels = ['{0} ({1})'.format(model.classes_[idx], sup) for idx, sup in enumerate(support)]",
+                          "plt.imshow(prf, interpolation='nearest', cmap='RdBu_r', aspect='auto', vmin=0.0, vmax=1.0)",
+                          "plt.title('Classification Report'); plt.colorbar()",
+                          "plt.xticks(np.arange(3), xticklabels)",
+                          "plt.yticks(np.arange(len(model.classes_)), yticklabels)",
+                          "for i, j in itertools.product(range(prf.shape[0]), range(prf.shape[1])):",
+                          "\tplt.text(j, i, format(prf[i, j], '.2f'), horizontalalignment='center',",
+                          "\t\tcolor='white' if (prf[i, j] >= 0.8 or prf[i, j] <= 0.2) else 'black')",
+                          "plt.ylabel('Classes')",
+                          "plt.xlabel(' ')",
+                          "plt.tight_layout()",
+                          "plt.savefig(" + filename_cr + ", dpi=300, transparent=True)"]) + '\n\n'
     else: return ''
 
 
 def output_regression(region, params):
-    if (region == 'header'): return residuals(region, params)
-    elif (region == 'body'):
+    if (region == 'body'):
         result = []
         for m in regression_metrics: result.append("sys.stdout.write('" + m[0] + ":\\t' + str(" + m[1] + ") + '\\n')")
         return '\n'.join(result) + '\n\n' + actual_vs_predicted(region, params) + residuals(region, params)
@@ -588,6 +624,7 @@ def actual_vs_predicted(region, params):
         filename_ap = filename + "_ap.png'"
         return '\n'.join(["# PLOT ACTUAL VS PREDICTED",
                           "plt.clf()",
+                          "plt.rcParams.update({'font.size':14})",
                           "plt.scatter(y_train_pred, y_train, label='Training data', c='indigo', alpha=0.3)",
                           "plt.scatter(y_test_pred, y_test, label='Testing data', c='goldenrod', alpha=0.3)",
                           "plt.xlabel('Predicted value')",
@@ -597,15 +634,13 @@ def actual_vs_predicted(region, params):
                           "plt.xlim([0, maxie])",
                           "plt.ylim([0, maxie])",
                           "plt.legend(framealpha=0.0)",
+                          "plt.tight_layout()",
                           "plt.savefig(" + filename_ap + ", dpi=300, transparent=True)"]) + '\n\n'
     else: return ''
 
 
 def residuals(region, params):
-    if (region == 'header'):
-        if ('visualize' in params) and (params['visualize'] > 0): return ''
-        else: return "import matplotlib.pyplot as plt" + '\n'
-    elif (region == 'body'):
+    if (region == 'body'):
         filename = get_filename(params)
         extension_index = filename.rfind('.')
         if (extension_index >= 0): filename = filename[:extension_index]
@@ -618,6 +653,7 @@ def residuals(region, params):
                           "plt.xlabel('Fitted Value')",
                           "plt.ylabel('Residual')",
                           "plt.legend(['Training data', 'Testing data'], framealpha=0.0)",
+                          "plt.tight_layout()",
                           "plt.savefig(" + filename_resid1 + ", dpi=300, transparent=True)",
                           "",
                           "# PLOT RESIDUALS (HISTOGRAM)",
@@ -628,6 +664,7 @@ def residuals(region, params):
                           "plt.xlabel('Residual')",
                           "plt.ylabel('Frequency')",
                           "plt.legend(['Training data', 'Testing data'], framealpha=0.0)",
+                          "plt.tight_layout()",
                           "plt.savefig(" + filename_resid2 + ", dpi=300, transparent=True)"]) + '\n\n'
     else: return ''
 
