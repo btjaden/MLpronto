@@ -563,11 +563,11 @@ def output(region, params):
 
 
 def output_classification(region, params):
-    if (region == 'header'): return confusion_and_classification(region, params)
+    if (region == 'header'): return confusion_and_classification(region, params) + roc_and_prc(region, params)
     elif (region == 'body'):
         result = []
         for m in classification_metrics: result.append("sys.stdout.write('" + m[0] + ":\\t' + str(" + m[1] + ") + '\\n')")
-        return '\n'.join(result) + '\n\n' + confusion_and_classification(region, params)
+        return '\n'.join(result) + '\n\n' + confusion_and_classification(region, params) + roc_and_prc(region, params)
     else: return ''
 
 
@@ -605,6 +605,40 @@ def confusion_and_classification(region, params):
                           "plt.xlabel(' ')",
                           "plt.tight_layout()",
                           "plt.savefig(" + filename_cr + ", dpi=300, transparent=True)"]) + '\n\n'
+    else: return ''
+
+
+def roc_and_prc(region, params):
+    if (region == 'header'):
+        if ('feature_scaling' in params) or ('labels_non_numeric' in params) or ('encode_binary_features' in params): return ''
+        else: return "from sklearn import preprocessing" + '\n'
+    elif (region == 'body'):
+        filename = get_filename(params)
+        extension_index = filename.rfind('.')
+        if (extension_index >= 0): filename = filename[:extension_index]
+        filename_roc, filename_prc = filename + "_roc.png'", filename + "_prc.png'"
+        return '\n'.join(["# ROC CURVE",
+                          "y_classes = preprocessing.label_binarize(y_test, classes=model.classes_)",
+                          "fpr, tpr, _ = metrics.roc_curve(y_classes.ravel(), y_test_pred_proba.ravel())",
+                          "plt.clf()",
+                          "plt.plot(fpr, tpr, label='ROC', color='indigo', lw=4)",
+                          "plt.plot([0,1], [0,1], label='Random', linestyle='--', color='goldenrod', lw=4)",
+                          "plt.axis('square'); plt.legend(frameon=False, loc='lower right')",
+                          "plt.xlabel('False Positive Rate'); plt.ylabel('True Positive Rate')",
+                          "plt.title('Receiver Operating Characteristic')",
+                          "plt.tight_layout()",
+                          "plt.savefig(" + filename_roc + ", dpi=300, transparent=True)",
+                          "",
+                          "# PRECISION RECALL CURVE",
+                          "precision, recall, _ = metrics.precision_recall_curve(y_classes.ravel(), y_test_pred_proba.ravel())",
+                          "plt.clf()",
+                          "plt.plot(recall, precision, color='indigo', lw=4)",
+                          "plt.axis('square'); plt.legend('', frameon=False)",
+                          "plt.xlim(0,1.05); plt.ylim(0,1.05)",
+                          "plt.xlabel('Recall'); plt.ylabel('Precision')",
+                          "plt.title('Precision Recall Curve')",
+                          "plt.tight_layout()",
+                          "plt.savefig(" + filename_prc + ", dpi=300, transparent=True)"]) + '\n\n'
     else: return ''
 
 
