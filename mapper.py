@@ -265,7 +265,7 @@ def remove_rows(region, params):
 def labels_contain_nan(region, params):
     if (region == 'body'):
         if ('labels_contain_nan' in params) and (params['labels_contain_nan']):
-            output_column = (params['output_column'])
+            output_column = str(params['output_column'])
             return '\n'.join(["# REMOVE ROWS WITH MISSING VALUES IN LABEL COLUMN",
                               "df = df.dropna(subset=[df.columns[" + output_column + "]])"]) + '\n\n'
         else: return ''
