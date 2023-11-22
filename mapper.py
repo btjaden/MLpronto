@@ -183,9 +183,9 @@ def visualize(region, params):
                          "ax.set_xticks([])",
                          "ax.set_yticks([])",
                          "ax.set_zticks([])",
-                         "ax.w_xaxis.set_pane_color((1.0, 1.0, 1.0, 0.25))",
-                         "ax.w_yaxis.set_pane_color((1.0, 1.0, 1.0, 0.25))",
-                         "ax.w_zaxis.set_pane_color((1.0, 1.0, 1.0, 0.25))",
+                         "ax.xaxis.set_pane_color((1.0, 1.0, 1.0, 0.25))",
+                         "ax.yaxis.set_pane_color((1.0, 1.0, 1.0, 0.25))",
+                         "ax.zaxis.set_pane_color((1.0, 1.0, 1.0, 0.25))",
                          "plt.savefig(" + filename3d + ", dpi=300, transparent=True)"]
             return '\n'.join(code) + '\n\n'
         else: return ''
